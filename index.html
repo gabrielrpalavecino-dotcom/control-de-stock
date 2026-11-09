@@ -203,6 +203,28 @@
       </div>
     </div>
 
+    <!-- PERFIL DEL USUARIO -->
+    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+      <div class="flex items-center gap-2 mb-4">
+        <i data-lucide="key-round" class="w-5 h-5 text-blue-600"></i>
+        <div><h2 class="text-base font-bold text-slate-800">Mi acceso</h2><p class="text-xs text-slate-500">Actualiza tu contraseña personal.</p></div>
+      </div>
+      <form onsubmit="updateOwnPassword(event)" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <input id="currentPassword" type="password" placeholder="Clave actual" class="border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+        <input id="newPassword" type="password" placeholder="Nueva clave" class="border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+        <div class="flex gap-2"><input id="confirmPassword" type="password" placeholder="Repetir nueva clave" class="min-w-0 flex-1 border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" required><button class="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 rounded-lg text-sm">Guardar</button></div>
+      </form>
+    </div>
+
+    <!-- GESTIÓN DE CUENTAS (SOLO ADMINISTRACIÓN) -->
+    <div class="admin-only bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+      <div class="flex items-center gap-2 mb-4">
+        <i data-lucide="users-round" class="w-5 h-5 text-blue-600"></i>
+        <div><h2 class="text-base font-bold text-slate-800">Gestión de usuarios</h2><p class="text-xs text-slate-500">Edita el nombre, usuario y clave de todas las cuentas.</p></div>
+      </div>
+      <div id="userManagementList" class="grid grid-cols-1 lg:grid-cols-2 gap-3"></div>
+    </div>
+
     <!-- SECCIÓN DE GRÁFICOS INTERACTIVOS -->
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
       <!-- Gráfico 1: Niveles de Stock por Ítem -->
@@ -578,17 +600,22 @@
     let detectedTicketItems = [];
     let sortColumn = null;
     let sortDirection = 'asc';
-    const USERS = {
-      encargada: { password: 'Tobe2026Stock#1', name: 'Encargada', role: 'admin' },
-      '1': { password: '111111', name: 'Usuario 1', role: 'viewer' },
-      '2': { password: '222222', name: 'Usuario 2', role: 'viewer' },
-      '3': { password: '333333', name: 'Usuario 3', role: 'viewer' },
-      '4': { password: '444444', name: 'Usuario 4', role: 'viewer' },
-      '5': { password: '555555', name: 'Usuario 5', role: 'viewer' },
-      '6': { password: '666666', name: 'Usuario 6', role: 'viewer' }
+    const DEFAULT_ACCOUNTS = {
+      admin: { username: 'encargada', password: 'Tobe2026Stock#1', name: 'Encargada', role: 'admin' },
+      user1: { username: '1', password: '111111', name: 'Usuario 1', role: 'viewer' },
+      user2: { username: '2', password: '222222', name: 'Usuario 2', role: 'viewer' },
+      user3: { username: '3', password: '333333', name: 'Usuario 3', role: 'viewer' },
+      user4: { username: '4', password: '444444', name: 'Usuario 4', role: 'viewer' },
+      user5: { username: '5', password: '555555', name: 'Usuario 5', role: 'viewer' },
+      user6: { username: '6', password: '666666', name: 'Usuario 6', role: 'viewer' }
     };
+    let accounts = JSON.parse(localStorage.getItem('control_stock_accounts')) || DEFAULT_ACCOUNTS;
     let currentUser = JSON.parse(localStorage.getItem('control_stock_session')) || null;
     let movementHistory = JSON.parse(localStorage.getItem('control_stock_history')) || [];
+    if (currentUser && (!currentUser.id || !accounts[currentUser.id])) {
+      currentUser = null;
+      localStorage.removeItem('control_stock_session');
+    }
 
     // INICIALIZACIÓN
     document.addEventListener('DOMContentLoaded', () => {
@@ -604,17 +631,19 @@
       event.preventDefault();
       const username = document.getElementById('loginUser').value.trim().toLowerCase();
       const password = document.getElementById('loginPassword').value;
-      const account = USERS[username];
-      if (!account || account.password !== password) {
+      const accountEntry = Object.entries(accounts).find(([, account]) => account.username.toLowerCase() === username);
+      if (!accountEntry || accountEntry[1].password !== password) {
         document.getElementById('loginError').classList.remove('hidden');
         return;
       }
-      currentUser = { username, name: account.name, role: account.role };
+      const [id, account] = accountEntry;
+      currentUser = { id, username: account.username, name: account.name, role: account.role };
       localStorage.setItem('control_stock_session', JSON.stringify(currentUser));
       document.getElementById('loginError').classList.add('hidden');
       applyAccessControl();
       renderTable();
       renderHistory();
+      renderUserManagement();
     }
 
     function logout() {
@@ -623,6 +652,67 @@
       document.getElementById('loginUser').value = '';
       document.getElementById('loginPassword').value = '';
       applyAccessControl();
+    }
+
+    function saveAccounts() {
+      localStorage.setItem('control_stock_accounts', JSON.stringify(accounts));
+    }
+
+    function updateOwnPassword(event) {
+      event.preventDefault();
+      if (!currentUser) return;
+      const account = accounts[currentUser.id];
+      const currentPassword = document.getElementById('currentPassword').value;
+      const newPassword = document.getElementById('newPassword').value;
+      const confirmPassword = document.getElementById('confirmPassword').value;
+      if (account.password !== currentPassword) return alert('La clave actual no es correcta.');
+      if (newPassword.length < 6) return alert('La nueva clave debe tener al menos 6 caracteres.');
+      if (newPassword !== confirmPassword) return alert('Las nuevas claves no coinciden.');
+      account.password = newPassword;
+      saveAccounts();
+      event.target.reset();
+      recordHistory('Clave personal actualizada', account.name, '—');
+      alert('Tu clave se actualizó correctamente.');
+    }
+
+    function renderUserManagement() {
+      const container = document.getElementById('userManagementList');
+      if (!container || !isAdmin()) return;
+      container.innerHTML = '';
+      Object.entries(accounts).forEach(([id, account]) => {
+        const card = document.createElement('div');
+        card.className = 'border border-slate-200 rounded-xl p-4 bg-slate-50';
+        card.innerHTML = `
+          <div class="flex items-center justify-between mb-3"><span class="font-bold text-slate-800">${account.role === 'admin' ? 'Administradora' : 'Usuario de consulta'}</span><span class="text-xs px-2 py-0.5 rounded-full ${account.role === 'admin' ? 'bg-blue-100 text-blue-700' : 'bg-slate-200 text-slate-600'}">${account.role === 'admin' ? 'Acceso total' : 'Solo lectura'}</span></div>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <input id="account-name-${id}" value="${account.name}" placeholder="Nombre" class="border border-slate-300 rounded-lg p-2 text-sm">
+            <input id="account-user-${id}" value="${account.username}" placeholder="Usuario" class="border border-slate-300 rounded-lg p-2 text-sm">
+            <input id="account-password-${id}" value="${account.password}" type="password" placeholder="Clave" class="border border-slate-300 rounded-lg p-2 text-sm">
+          </div>
+          <button onclick="saveAccount('${id}')" class="mt-3 bg-slate-800 hover:bg-slate-900 text-white px-3 py-1.5 rounded-lg text-xs font-bold">Guardar cambios</button>`;
+        container.appendChild(card);
+      });
+    }
+
+    function saveAccount(id) {
+      if (!requireAdmin() || !accounts[id]) return;
+      const name = document.getElementById(`account-name-${id}`).value.trim();
+      const username = document.getElementById(`account-user-${id}`).value.trim();
+      const password = document.getElementById(`account-password-${id}`).value;
+      if (!name || !username || !password) return alert('Completa nombre, usuario y clave.');
+      if (password.length < 6) return alert('La clave debe tener al menos 6 caracteres.');
+      const duplicate = Object.entries(accounts).some(([accountId, account]) => accountId !== id && account.username.toLowerCase() === username.toLowerCase());
+      if (duplicate) return alert('Ese nombre de usuario ya está en uso.');
+      accounts[id] = { ...accounts[id], name, username, password };
+      if (currentUser && currentUser.id === id) {
+        currentUser = { id, name, username, role: accounts[id].role };
+        localStorage.setItem('control_stock_session', JSON.stringify(currentUser));
+      }
+      saveAccounts();
+      recordHistory('Cuenta actualizada', name, '—');
+      applyAccessControl();
+      renderUserManagement();
+      alert('Cuenta actualizada correctamente.');
     }
 
     function isAdmin() {
@@ -642,6 +732,7 @@
       document.getElementById('currentUserLabel').textContent = loggedIn
         ? `${currentUser.name}${isAdmin() ? ' · Administración' : ' · Solo lectura'}`
         : '';
+      if (isAdmin()) renderUserManagement();
       lucide.createIcons();
     }
 
