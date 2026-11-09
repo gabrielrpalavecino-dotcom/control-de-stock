@@ -1,10 +1,16 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Al Grano - Control de Inventario & Gráficos v3</title>
+  <title>Al Grano - Control de Inventario PWA v3</title>
+
+  <!-- PWA Theme Color -->
+  <meta name="theme-color" content="#2C1A1D">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Al Grano Stock">
+
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- SheetJS para Excel -->
@@ -13,6 +19,41 @@
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- Lucide Icons -->
   <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Inyección dinámica de Web App Manifest para PWA -->
+  <script>
+    (function injectManifest() {
+      const manifestObj = {
+        name: "Al Grano - Control de Inventario",
+        short_name: "Al Grano PWA",
+        description: "Gestión de inventario para cafetería de especialidad y pastelería",
+        start_url: "./",
+        display: "standalone",
+        background_color: "#FDFBF7",
+        theme_color: "#2C1A1D",
+        icons: [
+          {
+            src: "https://cdn-icons-png.flaticon.com/512/2935/2935307.png",
+            sizes: "192x192",
+            type: "image/png"
+          },
+          {
+            src: "https://cdn-icons-png.flaticon.com/512/2935/2935307.png",
+            sizes: "512x512",
+            type: "image/png"
+          }
+        ]
+      };
+      const stringManifest = JSON.stringify(manifestObj);
+      const blob = new Blob([stringManifest], { type: 'application/json' });
+      const manifestURL = URL.createObjectURL(blob);
+      const link = document.createElement('link');
+      link.rel = 'manifest';
+      link.href = manifestURL;
+      document.head.appendChild(link);
+    })();
+  </script>
+
   <style>
     :root {
       --espresso: #2C1A1D;
@@ -20,76 +61,74 @@
       --cream: #FDFBF7;
       --latte: #EFE6DD;
     }
-
     body {
       background-color: var(--cream);
       color: #332725;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     }
-
-    .bg-espresso {
-      background-color: var(--espresso);
-    }
-
-    .bg-caramel {
-      background-color: var(--caramel);
-    }
-
-    .bg-latte {
-      background-color: var(--latte);
-    }
-
-    .text-espresso {
-      color: var(--espresso);
-    }
-
-    .text-caramel {
-      color: var(--caramel);
-    }
-
-    .border-caramel {
-      border-color: var(--caramel);
-    }
+    .bg-espresso { background-color: var(--espresso); }
+    .bg-caramel { background-color: var(--caramel); }
+    .bg-latte { background-color: var(--latte); }
+    .text-espresso { color: var(--espresso); }
+    .text-caramel { color: var(--caramel); }
+    .border-caramel { border-color: var(--caramel); }
   </style>
 </head>
+<body class="min-h-screen pb-12 select-none">
 
-<body class="min-h-screen pb-12">
+  <!-- BANNER DE INSTALACIÓN PWA -->
+  <div id="pwaInstallBanner" class="hidden bg-amber-700 text-white px-4 py-2.5 shadow-md flex items-center justify-between z-50 sticky top-0">
+    <div class="flex items-center gap-2 text-xs font-semibold">
+      <i data-lucide="download" class="w-4 h-4 text-amber-200"></i>
+      <span>Instala <strong>Al Grano PWA</strong> en tu pantalla de inicio para usar sin conexión.</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <button onclick="installPWA()" class="bg-white text-amber-900 px-3 py-1 rounded-md text-xs font-bold hover:bg-amber-100 transition shadow-sm">
+        Instalar
+      </button>
+      <button onclick="dismissPwaBanner()" class="text-white/80 hover:text-white p-1">
+        <i data-lucide="x" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </div>
 
   <!-- ENCABEZADO Y BARRA SUPERIOR -->
   <header class="bg-espresso text-white shadow-md">
     <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col md:flex-row justify-between items-center gap-4">
       <div class="flex items-center gap-3">
-        <div class="p-2 bg-caramel rounded-lg text-white">
+        <div class="p-2 bg-caramel rounded-lg text-white relative">
           <i data-lucide="coffee" class="w-8 h-8"></i>
         </div>
         <div>
-          <h1 class="text-2xl font-bold tracking-tight">AL GRANO</h1>
-          <p class="text-xs text-amber-200/80 uppercase tracking-widest font-semibold">Cafetería de Especialidad &
-            Pastelería v3</p>
+          <div class="flex items-center gap-2">
+            <h1 class="text-2xl font-bold tracking-tight">AL GRANO</h1>
+            <!-- INDICADOR ONLINE / OFFLINE -->
+            <span id="networkBadge" class="inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30">
+              <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              ONLINE
+            </span>
+          </div>
+          <p class="text-xs text-amber-200/80 uppercase tracking-widest font-semibold">Progressive Web App (PWA)</p>
         </div>
       </div>
 
       <!-- BOTONES DE ACCIÓN PRINCIPALES -->
       <div class="flex flex-wrap items-center gap-2">
-        <button onclick="openTicketModal()"
-          class="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+        <button onclick="openTicketModal()" class="flex items-center gap-2 bg-amber-600 hover:bg-amber-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition shadow-sm">
           <i data-lucide="camera" class="w-4 h-4"></i>
           <span>📷 Escanear Ticket</span>
         </button>
-        <button onclick="document.getElementById('excelFileInput').click()"
-          class="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+        <button onclick="document.getElementById('excelFileInput').click()" class="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-2 rounded-lg text-sm font-medium transition shadow-sm">
           <i data-lucide="file-up" class="w-4 h-4"></i>
           <span>Importar Excel</span>
         </button>
         <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="importExcel(event)">
 
-        <button onclick="exportExcel()"
-          class="flex items-center gap-2 bg-stone-700 hover:bg-stone-800 text-white px-3 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+        <button onclick="exportExcel()" class="flex items-center gap-2 bg-stone-700 hover:bg-stone-800 text-white px-3 py-2 rounded-lg text-sm font-medium transition shadow-sm">
           <i data-lucide="file-down" class="w-4 h-4"></i>
           <span>Exportar</span>
         </button>
-        <button onclick="resetDemoData()"
-          class="flex items-center gap-2 border border-amber-300/30 text-amber-100 hover:bg-white/10 px-3 py-2 rounded-lg text-sm font-medium transition">
+        <button onclick="resetDemoData()" class="flex items-center gap-2 border border-amber-300/30 text-amber-100 hover:bg-white/10 px-3 py-2 rounded-lg text-sm font-medium transition">
           <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
           <span>Reset Demo</span>
         </button>
@@ -173,14 +212,11 @@
         <i data-lucide="plus-circle" class="w-5 h-5 text-caramel"></i>
         Ingreso Rápido de Stock / Insumo
       </h2>
-      <form id="itemForm" onsubmit="handleFormSubmit(event)"
-        class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+      <form id="itemForm" onsubmit="handleFormSubmit(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
         <!-- Categoría -->
         <div class="lg:col-span-1">
           <label class="block text-xs font-semibold text-stone-600 mb-1">Categoría</label>
-          <select id="formCategory" onchange="updateItemDropdown()"
-            class="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
-            required>
+          <select id="formCategory" onchange="updateItemDropdown()" class="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none" required>
             <option value="">Seleccionar...</option>
             <option value="Café en Grano">☕ Café en Grano</option>
             <option value="Lácteos y Bebidas">🥛 Lácteos y Bebidas</option>
@@ -197,8 +233,7 @@
         <!-- Sugeridos -->
         <div class="lg:col-span-1">
           <label class="block text-xs font-semibold text-stone-600 mb-1">Sugeridos</label>
-          <select id="formPresetItem" onchange="fillFromPreset()"
-            class="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
+          <select id="formPresetItem" onchange="fillFromPreset()" class="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none">
             <option value="">-- Elige o escribe --</option>
           </select>
         </div>
@@ -206,43 +241,32 @@
         <!-- Nombre del Producto -->
         <div class="lg:col-span-1">
           <label class="block text-xs font-semibold text-stone-600 mb-1">Producto / Insumo</label>
-          <input type="text" id="formName" placeholder="Ej: Café Etiopía"
-            class="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
-            required>
+          <input type="text" id="formName" placeholder="Ej: Café Etiopía" class="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none" required>
         </div>
 
         <!-- Unidad, Stock Actual, Mínimo y Recompra -->
         <div class="grid grid-cols-4 gap-2 lg:col-span-2">
           <div>
             <label class="block text-xs font-semibold text-stone-600 mb-1">Unidad</label>
-            <input type="text" id="formUnit" placeholder="kg, L, u"
-              class="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
-              required>
+            <input type="text" id="formUnit" placeholder="kg, L, u" class="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none" required>
           </div>
           <div>
             <label class="block text-xs font-semibold text-stone-600 mb-1">Stock</label>
-            <input type="number" step="0.1" id="formStock" placeholder="0"
-              class="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
-              required>
+            <input type="number" step="0.1" id="formStock" placeholder="0" class="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none" required>
           </div>
           <div>
             <label class="block text-xs font-semibold text-stone-600 mb-1">Mínimo</label>
-            <input type="number" step="0.1" id="formMin" placeholder="0"
-              class="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
-              required>
+            <input type="number" step="0.1" id="formMin" placeholder="0" class="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none" required>
           </div>
           <div>
             <label class="block text-xs font-semibold text-stone-600 mb-1">Recompra</label>
-            <input type="number" step="0.1" id="formReorder" placeholder="0"
-              class="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none"
-              required>
+            <input type="number" step="0.1" id="formReorder" placeholder="0" class="w-full bg-stone-50 border border-stone-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none" required>
           </div>
         </div>
 
         <!-- Botón de Guardado -->
         <div class="lg:col-span-1 flex items-end">
-          <button type="submit"
-            class="w-full bg-caramel hover:bg-amber-700 text-white font-medium p-2 rounded-lg text-sm transition shadow-sm flex items-center justify-center gap-1">
+          <button type="submit" class="w-full bg-caramel hover:bg-amber-700 text-white font-medium p-2 rounded-lg text-sm transition shadow-sm flex items-center justify-center gap-1">
             <i data-lucide="save" class="w-4 h-4"></i>
             <span>Guardar</span>
           </button>
@@ -254,14 +278,12 @@
     <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
       <div class="relative w-full sm:w-80">
         <i data-lucide="search" class="w-4 h-4 absolute left-3 top-3 text-stone-400"></i>
-        <input type="text" id="searchInput" oninput="renderTable()" placeholder="Buscar producto o insumo..."
-          class="w-full bg-white border border-stone-300 pl-9 pr-3 py-2 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-sm">
+        <input type="text" id="searchInput" oninput="renderTable()" placeholder="Buscar producto o insumo..." class="w-full bg-white border border-stone-300 pl-9 pr-3 py-2 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-sm">
       </div>
 
       <div class="flex items-center gap-2 w-full sm:w-auto justify-end">
         <!-- Filtro Categoría -->
-        <select id="filterCategory" onchange="renderTable()"
-          class="bg-white border border-stone-300 px-3 py-2 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-sm">
+        <select id="filterCategory" onchange="renderTable()" class="bg-white border border-stone-300 px-3 py-2 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-sm">
           <option value="ALL">Todas las Categorías</option>
           <option value="Café en Grano">☕ Café en Grano</option>
           <option value="Lácteos y Bebidas">🥛 Lácteos y Bebidas</option>
@@ -275,8 +297,7 @@
         </select>
 
         <!-- Filtro Estado -->
-        <select id="filterStatus" onchange="renderTable()"
-          class="bg-white border border-stone-300 px-3 py-2 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-sm">
+        <select id="filterStatus" onchange="renderTable()" class="bg-white border border-stone-300 px-3 py-2 rounded-lg text-sm focus:ring-2 focus:ring-amber-500 focus:outline-none shadow-sm">
           <option value="ALL">Todos los Estados</option>
           <option value="OK">OK</option>
           <option value="Alerta">Alerta</option>
@@ -311,8 +332,7 @@
   </main>
 
   <!-- MODAL DE LECTURA DE TICKET DE COMPRA -->
-  <div id="ticketModal"
-    class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+  <div id="ticketModal" class="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
     <div class="bg-white rounded-xl max-w-lg w-full p-6 shadow-2xl relative space-y-4">
       <button onclick="closeTicketModal()" class="absolute top-4 right-4 text-stone-400 hover:text-stone-600">
         <i data-lucide="x" class="w-6 h-6"></i>
@@ -330,15 +350,13 @@
 
       <div class="space-y-3">
         <div class="grid grid-cols-2 gap-3">
-          <label
-            class="flex flex-col items-center justify-center border-2 border-dashed border-amber-300 bg-amber-50/50 hover:bg-amber-50 rounded-xl p-4 cursor-pointer text-center transition">
+          <label class="flex flex-col items-center justify-center border-2 border-dashed border-amber-300 bg-amber-50/50 hover:bg-amber-50 rounded-xl p-4 cursor-pointer text-center transition">
             <i data-lucide="camera" class="w-8 h-8 text-amber-600 mb-1"></i>
             <span class="text-xs font-bold text-amber-900">Tomar Foto</span>
             <input type="file" accept="image/*" capture="environment" class="hidden" onchange="handleTicketFile(event)">
           </label>
 
-          <label
-            class="flex flex-col items-center justify-center border-2 border-dashed border-stone-300 bg-stone-50 hover:bg-stone-100 rounded-xl p-4 cursor-pointer text-center transition">
+          <label class="flex flex-col items-center justify-center border-2 border-dashed border-stone-300 bg-stone-50 hover:bg-stone-100 rounded-xl p-4 cursor-pointer text-center transition">
             <i data-lucide="upload-cloud" class="w-8 h-8 text-stone-600 mb-1"></i>
             <span class="text-xs font-bold text-stone-700">Subir Imagen / PDF</span>
             <input type="file" accept="image/*,.pdf" class="hidden" onchange="handleTicketFile(event)">
@@ -347,19 +365,16 @@
 
         <div id="ticketPreviewContainer" class="hidden border border-stone-200 rounded-lg p-2 bg-stone-50 text-center">
           <img id="ticketPreviewImg" src="" alt="Vista previa" class="max-h-48 mx-auto rounded border shadow-sm mb-2">
-          <p id="ticketProcessingText"
-            class="text-xs text-amber-700 font-semibold animate-pulse flex items-center justify-center gap-1">
+          <p id="ticketProcessingText" class="text-xs text-amber-700 font-semibold animate-pulse flex items-center justify-center gap-1">
             <i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Procesando lectura de ticket...
           </p>
         </div>
 
         <div id="ticketResults" class="hidden space-y-2">
           <p class="text-xs font-bold uppercase tracking-wider text-stone-500">Ítems Detectados en el Ticket:</p>
-          <div id="ticketItemsList"
-            class="max-h-40 overflow-y-auto divide-y divide-stone-100 border border-stone-200 rounded-lg p-2 bg-stone-50">
+          <div id="ticketItemsList" class="max-h-40 overflow-y-auto divide-y divide-stone-100 border border-stone-200 rounded-lg p-2 bg-stone-50">
           </div>
-          <button onclick="applyTicketItems()"
-            class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-sm transition shadow flex items-center justify-center gap-2">
+          <button onclick="applyTicketItems()" class="w-full bg-emerald-600 hover:bg-emerald-700 text-white font-bold py-2 rounded-lg text-sm transition shadow flex items-center justify-center gap-2">
             <i data-lucide="check" class="w-4 h-4"></i>
             <span>Sumar ítems al Inventario</span>
           </button>
@@ -369,6 +384,60 @@
   </div>
 
   <script>
+    // --- LÓGICA Y REGISTRO DE SERVICE WORKER PARA PWA ---
+    let deferredPrompt = null;
+
+    if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.protocol === 'http:')) {
+      window.addEventListener('load', () => {
+        // En entornos donde se permite registrar SW por archivo/ruta relativa
+        navigator.serviceWorker.register('./sw.js')
+          .then(reg => console.log('Service Worker Registrado para PWA'))
+          .catch(err => console.log('Registro SW ignorado en vista previa:', err.message));
+      });
+    }
+
+    // CAPTURA DEL EVENTO DE INSTALACIÓN PWA
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      const banner = document.getElementById('pwaInstallBanner');
+      if (banner) banner.classList.remove('hidden');
+    });
+
+    function installPWA() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choiceResult) => {
+          if (choiceResult.outcome === 'accepted') {
+            console.log('El usuario aceptó instalar la PWA');
+          }
+          deferredPrompt = null;
+          dismissPwaBanner();
+        });
+      }
+    }
+
+    function dismissPwaBanner() {
+      const banner = document.getElementById('pwaInstallBanner');
+      if (banner) banner.classList.add('hidden');
+    }
+
+    // DETECCIÓN DE ESTADO CONEXIÓN RED (ONLINE / OFFLINE)
+    function updateNetworkStatus() {
+      const badge = document.getElementById('networkBadge');
+      if (navigator.onLine) {
+        badge.className = "inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-400/30";
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> ONLINE`;
+      } else {
+        badge.className = "inline-flex items-center gap-1 text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 border border-rose-400/30";
+        badge.innerHTML = `<span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span> OFFLINE`;
+      }
+    }
+
+    window.addEventListener('online', updateNetworkStatus);
+    window.addEventListener('offline', updateNetworkStatus);
+
+
     // MAPEO DE ÍCONOS POR CATEGORÍA
     const CATEGORY_ICONS = {
       "Café en Grano": "coffee",
@@ -460,10 +529,12 @@
     let inventory = JSON.parse(localStorage.getItem('algrano_inventory_v3')) || initialData;
     let stockChartInstance = null;
     let statusChartInstance = null;
+    let detectedTicketItems = [];
 
     // INICIALIZACIÓN
     document.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
+      updateNetworkStatus();
       initCharts();
       renderTable();
     });
@@ -710,7 +781,7 @@
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = function (evt) {
+      reader.onload = function(evt) {
         try {
           const data = new Uint8Array(evt.target.result);
           const workbook = XLSX.read(data, { type: 'array' });
@@ -761,7 +832,7 @@
       if (!file) return;
 
       const reader = new FileReader();
-      reader.onload = function (evt) {
+      reader.onload = function(evt) {
         document.getElementById('ticketPreviewImg').src = evt.target.result;
         document.getElementById('ticketPreviewContainer').classList.remove('hidden');
         document.getElementById('ticketResults').classList.add('hidden');
@@ -815,5 +886,4 @@
     }
   </script>
 </body>
-
 </html>
