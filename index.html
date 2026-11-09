@@ -73,6 +73,27 @@
 </head>
 <body class="min-h-screen pb-12 select-none">
 
+  <!-- ACCESO DE USUARIOS -->
+  <div id="loginScreen" class="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-sm flex items-center justify-center p-4">
+    <form onsubmit="handleLogin(event)" class="w-full max-w-sm bg-white rounded-2xl shadow-2xl p-7 space-y-5">
+      <div class="text-center">
+        <div class="inline-flex p-3 bg-blue-600 text-white rounded-xl mb-3"><i data-lucide="boxes" class="w-7 h-7"></i></div>
+        <h2 class="text-xl font-extrabold text-slate-800">Control de Stock</h2>
+        <p class="text-sm text-slate-500 mt-1">Inicia sesión para continuar</p>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Usuario</label>
+        <input id="loginUser" type="text" autocomplete="username" placeholder="encargada o 1–6" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+      </div>
+      <div>
+        <label class="block text-xs font-semibold text-slate-600 mb-1">Contraseña</label>
+        <input id="loginPassword" type="password" autocomplete="current-password" class="w-full border border-slate-300 rounded-lg p-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+      </div>
+      <p id="loginError" class="hidden text-xs font-semibold text-rose-600 text-center">Usuario o contraseña incorrectos.</p>
+      <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg transition">Entrar</button>
+    </form>
+  </div>
+
   <!-- BANNER DE INSTALACIÓN PWA -->
   <div id="pwaInstallBanner" class="hidden bg-blue-600 text-white px-4 py-2.5 shadow-md flex items-center justify-between z-50 sticky top-0">
     <div class="flex items-center gap-2 text-xs font-semibold">
@@ -111,21 +132,25 @@
 
       <!-- BOTONES DE ACCIÓN PRINCIPALES -->
       <div class="flex flex-wrap items-center gap-2">
-        <button onclick="openTicketModal()" class="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+        <div class="flex items-center gap-2 text-xs bg-slate-800 border border-slate-700 rounded-lg px-2.5 py-1.5">
+          <span id="currentUserLabel" class="text-slate-200 font-semibold"></span>
+          <button onclick="logout()" class="text-slate-400 hover:text-white" title="Cerrar sesión"><i data-lucide="log-out" class="w-4 h-4"></i></button>
+        </div>
+        <button onclick="openTicketModal()" class="admin-only flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition shadow-sm">
           <i data-lucide="camera" class="w-4 h-4"></i>
           <span>📷 Escanear Ticket</span>
         </button>
-        <button onclick="document.getElementById('excelFileInput').click()" class="flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-2 rounded-lg text-sm font-medium transition shadow-sm">
+        <button onclick="document.getElementById('excelFileInput').click()" class="admin-only flex items-center gap-2 bg-emerald-700 hover:bg-emerald-800 text-white px-3 py-2 rounded-lg text-sm font-medium transition shadow-sm">
           <i data-lucide="file-up" class="w-4 h-4"></i>
           <span>Importar Excel</span>
         </button>
-        <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden" onchange="importExcel(event)">
+        <input type="file" id="excelFileInput" accept=".xlsx, .xls, .csv" class="hidden admin-only" onchange="importExcel(event)">
 
         <button onclick="exportExcel()" class="flex items-center gap-2 bg-slate-700 hover:bg-slate-800 text-white px-3 py-2 rounded-lg text-sm font-medium transition shadow-sm">
           <i data-lucide="file-down" class="w-4 h-4"></i>
           <span>Exportar</span>
         </button>
-        <button onclick="resetDemoData()" class="flex items-center gap-2 border border-slate-700 text-slate-300 hover:bg-white/10 px-3 py-2 rounded-lg text-sm font-medium transition">
+        <button onclick="resetDemoData()" class="admin-only flex items-center gap-2 border border-slate-700 text-slate-300 hover:bg-white/10 px-3 py-2 rounded-lg text-sm font-medium transition">
           <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
           <span>Reset Demo</span>
         </button>
@@ -204,12 +229,12 @@
     </div>
 
     <!-- FORMULARIO DE ALTA RÁPIDA -->
-    <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+    <div class="admin-only bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
       <h2 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
         <i data-lucide="plus-circle" class="w-5 h-5 text-blue-600"></i>
         Ingreso Rápido de Stock / Insumo
       </h2>
-      <form id="itemForm" onsubmit="handleFormSubmit(event)" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
+      <form id="itemForm" onsubmit="handleFormSubmit(event)" class="admin-only grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-6 gap-3">
         <!-- Categoría -->
         <div class="lg:col-span-1">
           <label class="block text-xs font-semibold text-slate-600 mb-1">Categoría</label>
@@ -335,6 +360,27 @@
           </thead>
           <tbody id="inventoryTableBody" class="divide-y divide-slate-100">
             <!-- Filas generadas dinámicamente -->
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- HISTORIAL DE MOVIMIENTOS -->
+    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+      <div class="px-5 py-4 border-b border-slate-100 flex items-center gap-2">
+        <i data-lucide="history" class="w-5 h-5 text-blue-600"></i>
+        <div>
+          <h2 class="text-base font-bold text-slate-800">Historial de movimientos</h2>
+          <p class="text-xs text-slate-500">Registro de ingresos y cambios de stock</p>
+        </div>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full text-left text-sm text-slate-700">
+          <thead class="bg-slate-50 border-b border-slate-200 text-xs uppercase font-bold text-slate-500">
+            <tr><th class="p-3">Fecha y hora</th><th class="p-3">Usuario</th><th class="p-3">Movimiento</th><th class="p-3">Producto / Insumo</th><th class="p-3 text-center">Cantidad</th></tr>
+          </thead>
+          <tbody id="historyTableBody" class="divide-y divide-slate-100">
+            <tr><td colspan="5" class="p-5 text-center text-slate-400">Aún no hay movimientos registrados.</td></tr>
           </tbody>
         </table>
       </div>
@@ -532,14 +578,113 @@
     let detectedTicketItems = [];
     let sortColumn = null;
     let sortDirection = 'asc';
+    const USERS = {
+      encargada: { password: 'Tobe2026Stock#1', name: 'Encargada', role: 'admin' },
+      '1': { password: '111111', name: 'Usuario 1', role: 'viewer' },
+      '2': { password: '222222', name: 'Usuario 2', role: 'viewer' },
+      '3': { password: '333333', name: 'Usuario 3', role: 'viewer' },
+      '4': { password: '444444', name: 'Usuario 4', role: 'viewer' },
+      '5': { password: '555555', name: 'Usuario 5', role: 'viewer' },
+      '6': { password: '666666', name: 'Usuario 6', role: 'viewer' }
+    };
+    let currentUser = JSON.parse(localStorage.getItem('control_stock_session')) || null;
+    let movementHistory = JSON.parse(localStorage.getItem('control_stock_history')) || [];
 
     // INICIALIZACIÓN
     document.addEventListener('DOMContentLoaded', () => {
       lucide.createIcons();
+      applyAccessControl();
       updateNetworkStatus();
       initCharts();
       renderTable();
+      renderHistory();
     });
+
+    function handleLogin(event) {
+      event.preventDefault();
+      const username = document.getElementById('loginUser').value.trim().toLowerCase();
+      const password = document.getElementById('loginPassword').value;
+      const account = USERS[username];
+      if (!account || account.password !== password) {
+        document.getElementById('loginError').classList.remove('hidden');
+        return;
+      }
+      currentUser = { username, name: account.name, role: account.role };
+      localStorage.setItem('control_stock_session', JSON.stringify(currentUser));
+      document.getElementById('loginError').classList.add('hidden');
+      applyAccessControl();
+      renderTable();
+      renderHistory();
+    }
+
+    function logout() {
+      localStorage.removeItem('control_stock_session');
+      currentUser = null;
+      document.getElementById('loginUser').value = '';
+      document.getElementById('loginPassword').value = '';
+      applyAccessControl();
+    }
+
+    function isAdmin() {
+      return currentUser && currentUser.role === 'admin';
+    }
+
+    function requireAdmin() {
+      if (isAdmin()) return true;
+      alert('Tu usuario tiene acceso solo de lectura.');
+      return false;
+    }
+
+    function applyAccessControl() {
+      const loggedIn = !!currentUser;
+      document.getElementById('loginScreen').classList.toggle('hidden', loggedIn);
+      document.querySelectorAll('.admin-only').forEach(element => element.classList.toggle('hidden', !isAdmin()));
+      document.getElementById('currentUserLabel').textContent = loggedIn
+        ? `${currentUser.name}${isAdmin() ? ' · Administración' : ' · Solo lectura'}`
+        : '';
+      lucide.createIcons();
+    }
+
+    function recordHistory(action, product, quantity = '') {
+      movementHistory.unshift({
+        timestamp: new Date().toISOString(),
+        user: currentUser ? currentUser.name : 'Sistema',
+        action,
+        product,
+        quantity
+      });
+      movementHistory = movementHistory.slice(0, 500);
+      localStorage.setItem('control_stock_history', JSON.stringify(movementHistory));
+      renderHistory();
+    }
+
+    function renderHistory() {
+      const tbody = document.getElementById('historyTableBody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      if (!movementHistory.length) {
+        tbody.innerHTML = '<tr><td colspan="5" class="p-5 text-center text-slate-400">Aún no hay movimientos registrados.</td></tr>';
+        return;
+      }
+      movementHistory.forEach(entry => {
+        const row = document.createElement('tr');
+        row.className = 'hover:bg-slate-50';
+        const cells = [
+          new Date(entry.timestamp).toLocaleString('es-ES'),
+          entry.user,
+          entry.action,
+          entry.product,
+          entry.quantity || '—'
+        ];
+        cells.forEach((value, index) => {
+          const cell = document.createElement('td');
+          cell.className = `p-3 ${index === 4 ? 'text-center font-semibold text-blue-700' : ''}`;
+          cell.textContent = value;
+          row.appendChild(cell);
+        });
+        tbody.appendChild(row);
+      });
+    }
 
     // ACTUALIZAR DESPLEGABLE DE SUGERIDOS
     function updateItemDropdown() {
@@ -593,6 +738,7 @@
     // MANEJO DE FORMULARIO DE ALTA / EDICIÓN
     function handleFormSubmit(e) {
       e.preventDefault();
+      if (!requireAdmin()) return;
       const category = document.getElementById('formCategory').value;
       const name = document.getElementById('formName').value.trim();
       const unit = document.getElementById('formUnit').value.trim();
@@ -637,34 +783,43 @@
       }
 
       saveAndRender();
+      recordHistory(existingIndex >= 0 ? 'Ingreso actualizado' : 'Nuevo ingreso', name, `+${addedQtyVal} ${unit}`);
       document.getElementById('itemForm').reset();
       document.getElementById('formPresetItem').innerHTML = '<option value="">-- Elige o escribe --</option>';
     }
 
     // APLICAR CANTIDAD AGREGADA AL STOCK TOTAL
     function applyAddedStock(id) {
+      if (!requireAdmin()) return;
       const item = inventory.find(i => i.id === id);
       if (item && item.addedQty > 0) {
+        const amount = item.addedQty;
         item.stock = parseFloat((item.stock + item.addedQty).toFixed(3));
         item.addedQty = 0;
         saveAndRender();
+        recordHistory('Ingreso aplicado al stock', item.name, `+${amount} ${item.unit}`);
       }
     }
 
     // CAMBIAR STOCK RÁPIDO CON BOTONES + / -
     function adjustStock(id, delta) {
+      if (!requireAdmin()) return;
       const item = inventory.find(i => i.id === id);
       if (item) {
         item.stock = Math.max(0, parseFloat((item.stock + delta).toFixed(3)));
         saveAndRender();
+        recordHistory('Ajuste de stock', item.name, `${delta > 0 ? '+' : ''}${delta} ${item.unit}`);
       }
     }
 
     // ELIMINAR ÍTEM
     function deleteItem(id) {
+      if (!requireAdmin()) return;
       if (confirm('¿Eliminar este insumo del inventario?')) {
+        const item = inventory.find(i => i.id === id);
         inventory = inventory.filter(i => i.id !== id);
         saveAndRender();
+        if (item) recordHistory('Producto eliminado', item.name, '—');
       }
     }
 
@@ -765,9 +920,9 @@
             <td class="p-3 text-center text-slate-500">${item.unit}</td>
             <td class="p-3 text-center font-bold text-slate-900">
               <div class="flex items-center justify-center gap-2">
-                <button onclick="adjustStock(${item.id}, -1)" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold flex items-center justify-center text-xs">-</button>
+                ${isAdmin() ? `<button onclick="adjustStock(${item.id}, -1)" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold flex items-center justify-center text-xs">-</button>` : ''}
                 <span class="w-12">${item.stock}</span>
-                <button onclick="adjustStock(${item.id}, 1)" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold flex items-center justify-center text-xs">+</button>
+                ${isAdmin() ? `<button onclick="adjustStock(${item.id}, 1)" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold flex items-center justify-center text-xs">+</button>` : ''}
               </div>
             </td>
             <td class="p-3 text-center font-bold text-blue-600 bg-blue-50/50">
@@ -776,7 +931,7 @@
             <td class="p-3 text-center font-extrabold text-slate-900 bg-slate-50">
               <div class="flex items-center justify-center gap-1.5">
                 <span>${totalStock}</span>
-                ${addedQty > 0 ? `
+                ${isAdmin() && addedQty > 0 ? `
                   <button onclick="applyAddedStock(${item.id})" title="Sumar cantidad al Stock Actual" class="p-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-sm">
                     <i data-lucide="check" class="w-3.5 h-3.5"></i>
                   </button>
@@ -792,9 +947,9 @@
               </span>
             </td>
             <td class="p-3 text-center">
-              <button onclick="deleteItem(${item.id})" class="text-slate-400 hover:text-rose-600 transition p-1">
+              ${isAdmin() ? `<button onclick="deleteItem(${item.id})" class="text-slate-400 hover:text-rose-600 transition p-1">
                 <i data-lucide="trash-2" class="w-4 h-4"></i>
-              </button>
+              </button>` : '<span class="text-xs text-slate-400">Solo lectura</span>'}
             </td>
           `;
           tbody.appendChild(tr);
@@ -891,6 +1046,7 @@
 
     // IMPORTAR DE EXCEL
     function importExcel(e) {
+      if (!requireAdmin()) return;
       const file = e.target.files[0];
       if (!file) return;
 
@@ -913,6 +1069,7 @@
               reorder: parseFloat(row['Punto Recompra'] || row['Recompra'] || 0)
             }));
             saveAndRender();
+            recordHistory('Inventario importado', `${jsonData.length} productos desde Excel`, '—');
             alert('¡Inventario cargado exitosamente desde Excel!');
           }
         } catch (err) {
@@ -924,14 +1081,17 @@
 
     // RESET DATOS DEMO
     function resetDemoData() {
+      if (!requireAdmin()) return;
       if (confirm('¿Restablecer el inventario inicial de demostración?')) {
         inventory = [...initialData];
         saveAndRender();
+        recordHistory('Inventario restablecido', 'Datos de demostración', '—');
       }
     }
 
     // LECTURA DE TICKET / CÁMARA MODAL
     function openTicketModal() {
+      if (!requireAdmin()) return;
       document.getElementById('ticketModal').classList.remove('hidden');
       document.getElementById('ticketPreviewContainer').classList.add('hidden');
       document.getElementById('ticketResults').classList.add('hidden');
@@ -978,6 +1138,7 @@
     }
 
     function applyTicketItems() {
+      if (!requireAdmin()) return;
       detectedTicketItems.forEach(ticketItem => {
         const match = inventory.find(i => i.name.toLowerCase().includes(ticketItem.name.toLowerCase()));
         if (match) {
@@ -995,6 +1156,7 @@
         }
       });
       saveAndRender();
+      recordHistory('Ingreso desde ticket', `${detectedTicketItems.length} productos`, '—');
       closeTicketModal();
       alert('¡Se han sumado los productos del ticket al inventario!');
     }
