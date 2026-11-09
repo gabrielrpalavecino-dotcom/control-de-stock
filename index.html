@@ -60,6 +60,15 @@
       color: #0F172A;
       font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
     }
+    /* Ocultar las flechitas (spinners) de los inputs numéricos */
+    input[type=number]::-webkit-inner-spin-button, 
+    input[type=number]::-webkit-outer-spin-button { 
+      -webkit-appearance: none; 
+      margin: 0; 
+    }
+    input[type=number] {
+      -moz-appearance: textfield;
+    }
   </style>
 </head>
 <body class="min-h-screen pb-12 select-none">
@@ -232,23 +241,29 @@
           <input type="text" id="formName" placeholder="Ej: Café Etiopía" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
         </div>
 
-        <!-- Unidad, Stock Actual, Mínimo y Recompra -->
+        <!-- Unidad, Ingreso, Mínimo y Recompra -->
         <div class="grid grid-cols-4 gap-2 lg:col-span-2">
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Unidad</label>
             <input type="text" id="formUnit" placeholder="kg, L, u" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
           </div>
           <div>
-            <label class="block text-xs font-semibold text-slate-600 mb-1">Stock</label>
-            <input type="number" step="0.1" id="formStock" placeholder="0" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+            <label class="block text-xs font-semibold text-slate-600 mb-1">Ingreso</label>
+            <input type="number" step="0.001" id="formStock" placeholder="0.000" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+            <!-- ATAJOS RÁPIDOS PARA CAFÉ -->
+            <div class="flex gap-1 mt-1.5">
+              <button type="button" onclick="setCoffeeAmount(5)" class="text-[10px] bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold px-2 py-0.5 rounded-md border border-blue-200 transition">5kg</button>
+              <button type="button" onclick="setCoffeeAmount(2.5)" class="text-[10px] bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold px-2 py-0.5 rounded-md border border-blue-200 transition">2.5kg</button>
+              <button type="button" onclick="setCoffeeAmount(0.25)" class="text-[10px] bg-blue-50 hover:bg-blue-600 hover:text-white text-blue-700 font-bold px-2 py-0.5 rounded-md border border-blue-200 transition">250g</button>
+            </div>
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Mínimo</label>
-            <input type="number" step="0.1" id="formMin" placeholder="0" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+            <input type="number" step="0.001" id="formMin" placeholder="0" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
           </div>
           <div>
             <label class="block text-xs font-semibold text-slate-600 mb-1">Recompra</label>
-            <input type="number" step="0.1" id="formReorder" placeholder="0" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none" required>
+            <input type="number" step="0.001" id="formReorder" placeholder="Auto" class="w-full bg-slate-50 border border-slate-300 rounded-lg p-2 text-sm focus:ring-2 focus:ring-blue-500 focus:outline-none">
           </div>
         </div>
 
@@ -304,6 +319,8 @@
               <th class="p-3">Producto / Insumo</th>
               <th class="p-3 text-center">Unidad</th>
               <th class="p-3 text-center">Stock Actual</th>
+              <th class="p-3 text-center">+ Ingreso</th>
+              <th class="p-3 text-center">Stock Total</th>
               <th class="p-3 text-center">Mínimo</th>
               <th class="p-3 text-center">Recompra</th>
               <th class="p-3 text-center">Estado</th>
@@ -439,24 +456,24 @@
 
     // BASE DE DATOS INICIAL DEMO
     const initialData = [
-      { id: 1, category: "Café en Grano", name: "Café Especialidad Colombia", unit: "kg", stock: 8.0, min: 3.0, reorder: 5.0 },
-      { id: 2, category: "Café en Grano", name: "Café Especialidad Etiopía", unit: "kg", stock: 4.5, min: 2.0, reorder: 3.5 },
-      { id: 3, category: "Lácteos y Bebidas", name: "Leche Entera Fresca", unit: "Litros", stock: 24, min: 10, reorder: 15 },
-      { id: 4, category: "Lácteos y Bebidas", name: "Bebida de Avena Barista", unit: "Litros", stock: 12, min: 6, reorder: 8 },
-      { id: 5, category: "Pastelería / Finger Food", name: "Mini Pastafrolas Membrillo/Batata", unit: "Unidades", stock: 15, min: 10, reorder: 20 },
-      { id: 6, category: "Pastelería / Finger Food", name: "Cuadrados de Brownie Amargo", unit: "Unidades", stock: 18, min: 8, reorder: 15 },
-      { id: 7, category: "Pastelería / Finger Food", name: "Cuadrados de Lemonie", unit: "Unidades", stock: 12, min: 8, reorder: 12 },
-      { id: 8, category: "Pastelería / Finger Food", name: "Bites de Chocotorta", unit: "Unidades", stock: 25, min: 10, reorder: 18 },
-      { id: 9, category: "Pastelería / Finger Food", name: "Mini Alfajores de Maicena", unit: "Unidades", stock: 30, min: 12, reorder: 20 },
-      { id: 10, category: "Pastelería / Finger Food", name: "Bizcochitos de Grasa Artesanales", unit: "Paquetes", stock: 8, min: 10, reorder: 15 },
-      { id: 11, category: "Insumos de Barra", name: "Dulce de Leche Repostero", unit: "kg", stock: 6.0, min: 2.5, reorder: 4.0 },
-      { id: 12, category: "Empaques & Takeaway", name: "Vasos Takeaway 8 oz", unit: "Unidades", stock: 250, min: 100, reorder: 150 },
-      { id: 13, category: "Empaques & Takeaway", name: "Bolsas Kraft Finger Food", unit: "Unidades", stock: 400, min: 150, reorder: 200 },
-      { id: 14, category: "Té / Infusiones", name: "Té Matcha Grado Ceremonial", unit: "Gramos", stock: 300, min: 100, reorder: 200 },
-      { id: 15, category: "Té / Infusiones", name: "Té Earl Grey Hebras", unit: "Gramos", stock: 450, min: 150, reorder: 250 },
-      { id: 16, category: "Salados", name: "Sandwich Miga Jamón y Queso", unit: "Unidades", stock: 14, min: 10, reorder: 15 },
-      { id: 17, category: "Frutería", name: "Naranjas para Zumo", unit: "kg", stock: 18, min: 8, reorder: 12 },
-      { id: 18, category: "Artículos de Limpieza", name: "Detergente Multiusos Barra", unit: "Litros", stock: 3.5, min: 2.0, reorder: 4.0 }
+      { id: 1, category: "Café en Grano", name: "Café Especialidad Colombia", unit: "kg", stock: 8.0, addedQty: 0, min: 3.0, reorder: 5.0 },
+      { id: 2, category: "Café en Grano", name: "Café Especialidad Etiopía", unit: "kg", stock: 4.5, addedQty: 0, min: 2.0, reorder: 3.5 },
+      { id: 3, category: "Lácteos y Bebidas", name: "Leche Entera Fresca", unit: "Litros", stock: 24, addedQty: 0, min: 10, reorder: 15 },
+      { id: 4, category: "Lácteos y Bebidas", name: "Bebida de Avena Barista", unit: "Litros", stock: 12, addedQty: 0, min: 6, reorder: 8 },
+      { id: 5, category: "Pastelería / Finger Food", name: "Mini Pastafrolas Membrillo/Batata", unit: "Unidades", stock: 15, addedQty: 0, min: 10, reorder: 20 },
+      { id: 6, category: "Pastelería / Finger Food", name: "Cuadrados de Brownie Amargo", unit: "Unidades", stock: 18, addedQty: 0, min: 8, reorder: 15 },
+      { id: 7, category: "Pastelería / Finger Food", name: "Cuadrados de Lemonie", unit: "Unidades", stock: 12, addedQty: 0, min: 8, reorder: 12 },
+      { id: 8, category: "Pastelería / Finger Food", name: "Bites de Chocotorta", unit: "Unidades", stock: 25, addedQty: 0, min: 10, reorder: 18 },
+      { id: 9, category: "Pastelería / Finger Food", name: "Mini Alfajores de Maicena", unit: "Unidades", stock: 30, addedQty: 0, min: 12, reorder: 20 },
+      { id: 10, category: "Pastelería / Finger Food", name: "Bizcochitos de Grasa Artesanales", unit: "Paquetes", stock: 8, addedQty: 0, min: 10, reorder: 15 },
+      { id: 11, category: "Insumos de Barra", name: "Dulce de Leche Repostero", unit: "kg", stock: 6.0, addedQty: 0, min: 2.5, reorder: 4.0 },
+      { id: 12, category: "Empaques & Takeaway", name: "Vasos Takeaway 8 oz", unit: "Unidades", stock: 250, addedQty: 0, min: 100, reorder: 150 },
+      { id: 13, category: "Empaques & Takeaway", name: "Bolsas Kraft Finger Food", unit: "Unidades", stock: 400, addedQty: 0, min: 150, reorder: 200 },
+      { id: 14, category: "Té / Infusiones", name: "Té Matcha Grado Ceremonial", unit: "Gramos", stock: 300, addedQty: 0, min: 100, reorder: 200 },
+      { id: 15, category: "Té / Infusiones", name: "Té Earl Grey Hebras", unit: "Gramos", stock: 450, addedQty: 0, min: 150, reorder: 250 },
+      { id: 16, category: "Salados", name: "Sandwich Miga Jamón y Queso", unit: "Unidades", stock: 14, addedQty: 0, min: 10, reorder: 15 },
+      { id: 17, category: "Frutería", name: "Naranjas para Zumo", unit: "kg", stock: 18, addedQty: 0, min: 8, reorder: 12 },
+      { id: 18, category: "Artículos de Limpieza", name: "Detergente Multiusos Barra", unit: "Litros", stock: 3.5, addedQty: 0, min: 2.0, reorder: 4.0 }
     ];
 
     // PRESETS DE AUTOCOMPLETADO
@@ -518,6 +535,11 @@
       const presetSelect = document.getElementById('formPresetItem');
       presetSelect.innerHTML = '<option value="">-- Elige o escribe --</option>';
 
+      // Si selecciona la categoría Café en Grano, poner por defecto la unidad en "kg"
+      if (cat === "Café en Grano") {
+        document.getElementById('formUnit').value = "kg";
+      }
+
       if (PRESETS[cat]) {
         PRESETS[cat].forEach((item, index) => {
           const opt = document.createElement('option');
@@ -535,10 +557,43 @@
       if (cat && presetIdx !== "" && PRESETS[cat][presetIdx]) {
         const item = PRESETS[cat][presetIdx];
         document.getElementById('formName').value = item.name;
+        document.getElementById('formUnit').value = item.unit || (cat === "Café en Grano" ? "kg" : "u");
+        document.getElementById('formMin').value = item.min;
+        document.getElementById('formReorder').value = item.reorder;
+        document.getElementById('formStock').focus();
+      }
+    }
+
+    // BOTONES RÁPIDOS DE CANTIDAD PARA CAFÉ
+    function setCoffeeAmount(val) {
+      document.getElementById('formStock').value = val;
+      // Asegurar que la unidad esté configurada en kg para café
+      const cat = document.getElementById('formCategory').value;
+      if (!cat || cat === "Café en Grano") {
+        document.getElementById('formUnit').value = "kg";
+      }
+    }
+
+    // RELLENAR CAMPOS DESDE SUGERIDO
+    function fillFromPreset() {
+      const cat = document.getElementById('formCategory').value;
+      const presetIdx = document.getElementById('formPresetItem').value;
+      if (cat && presetIdx !== "" && PRESETS[cat][presetIdx]) {
+        const item = PRESETS[cat][presetIdx];
+        document.getElementById('formName').value = item.name;
         document.getElementById('formUnit').value = item.unit;
         document.getElementById('formMin').value = item.min;
         document.getElementById('formReorder').value = item.reorder;
         document.getElementById('formStock').focus();
+      }
+    }
+
+    // BOTONES RÁPIDOS DE CANTIDAD PARA CAFÉ
+    function setCoffeeAmount(val) {
+      document.getElementById('formStock').value = val;
+      const cat = document.getElementById('formCategory').value;
+      if (!cat || cat === "Café en Grano") {
+        document.getElementById('formUnit').value = "kg";
       }
     }
 
@@ -548,17 +603,44 @@
       const category = document.getElementById('formCategory').value;
       const name = document.getElementById('formName').value.trim();
       const unit = document.getElementById('formUnit').value.trim();
-      const stock = parseFloat(document.getElementById('formStock').value);
-      const min = parseFloat(document.getElementById('formMin').value);
-      const reorder = parseFloat(document.getElementById('formReorder').value);
+      const addedQtyVal = parseFloat(document.getElementById('formStock').value) || 0;
+      
+      // Mínimo opcional (0 por defecto)
+      const rawMin = document.getElementById('formMin').value;
+      const min = rawMin !== "" ? parseFloat(rawMin) : 0;
+      
+      // Recompra opcional (auto-calculado si no se completa)
+      const rawReorder = document.getElementById('formReorder').value;
+      const parsedReorder = parseFloat(rawReorder);
+      const reorder = (!isNaN(parsedReorder) && parsedReorder > 0) 
+        ? parsedReorder 
+        : parseFloat((min * 1.5).toFixed(3));
 
       const existingIndex = inventory.findIndex(i => i.name.toLowerCase() === name.toLowerCase());
 
       if (existingIndex >= 0) {
-        inventory[existingIndex] = { ...inventory[existingIndex], category, unit, stock, min, reorder };
+        // Asignar nueva cantidad agregada sin perder el stock actual existente
+        inventory[existingIndex] = { 
+          ...inventory[existingIndex], 
+          category, 
+          unit, 
+          addedQty: parseFloat(addedQtyVal.toFixed(3)), 
+          min, 
+          reorder 
+        };
       } else {
+        // Nuevo producto: Stock inicial 0, cantidad agregada es lo ingresado
         const newId = inventory.length ? Math.max(...inventory.map(i => i.id)) + 1 : 1;
-        inventory.push({ id: newId, category, name, unit, stock, min, reorder });
+        inventory.push({ 
+          id: newId, 
+          category, 
+          name, 
+          unit, 
+          stock: 0,
+          addedQty: parseFloat(addedQtyVal.toFixed(3)), 
+          min, 
+          reorder 
+        });
       }
 
       saveAndRender();
@@ -566,11 +648,21 @@
       document.getElementById('formPresetItem').innerHTML = '<option value="">-- Elige o escribe --</option>';
     }
 
+    // APLICAR CANTIDAD AGREGADA AL STOCK TOTAL
+    function applyAddedStock(id) {
+      const item = inventory.find(i => i.id === id);
+      if (item && item.addedQty > 0) {
+        item.stock = parseFloat((item.stock + item.addedQty).toFixed(3));
+        item.addedQty = 0;
+        saveAndRender();
+      }
+    }
+
     // CAMBIAR STOCK RÁPIDO CON BOTONES + / -
     function adjustStock(id, delta) {
       const item = inventory.find(i => i.id === id);
       if (item) {
-        item.stock = Math.max(0, parseFloat((item.stock + delta).toFixed(2)));
+        item.stock = Math.max(0, parseFloat((item.stock + delta).toFixed(3)));
         saveAndRender();
       }
     }
@@ -609,7 +701,9 @@
       let countTotal = 0, countOk = 0, countAlerta = 0, countReponer = 0;
 
       inventory.forEach(item => {
-        const status = getStatus(item.stock, item.min, item.reorder);
+        const addedQty = item.addedQty || 0;
+        const totalStock = parseFloat((item.stock + addedQty).toFixed(3));
+        const status = getStatus(totalStock, item.min, item.reorder);
         const iconName = CATEGORY_ICONS[item.category] || 'box';
 
         // Contadores KPI
@@ -640,6 +734,19 @@
                 <button onclick="adjustStock(${item.id}, -1)" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold flex items-center justify-center text-xs">-</button>
                 <span class="w-12">${item.stock}</span>
                 <button onclick="adjustStock(${item.id}, 1)" class="w-6 h-6 rounded bg-slate-200 hover:bg-slate-300 text-slate-700 font-bold flex items-center justify-center text-xs">+</button>
+              </div>
+            </td>
+            <td class="p-3 text-center font-bold text-blue-600 bg-blue-50/50">
+              ${addedQty > 0 ? `+${addedQty}` : '0'}
+            </td>
+            <td class="p-3 text-center font-extrabold text-slate-900 bg-slate-50">
+              <div class="flex items-center justify-center gap-1.5">
+                <span>${totalStock}</span>
+                ${addedQty > 0 ? `
+                  <button onclick="applyAddedStock(${item.id})" title="Sumar cantidad al Stock Actual" class="p-1 bg-emerald-600 hover:bg-emerald-700 text-white rounded shadow-sm">
+                    <i data-lucide="check" class="w-3.5 h-3.5"></i>
+                  </button>
+                ` : ''}
               </div>
             </td>
             <td class="p-3 text-center text-slate-400">${item.min}</td>
